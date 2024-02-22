@@ -20,10 +20,16 @@ We use 2019 U.S. Census Bureau data (most recent available data), which can be f
 library(tidyverse)
 library(haven)
 library(janitor)
+library(stringr)
 
 # Import FIPS data containing FIPS code, county name and state name
-geocodes <- read_csv("all-geocodes-v2019.csv", 
-                     show_col_types = FALSE)
+geocodes <- read_csv("../all-geocodes-v2019.csv", 
+                     skip = 5,
+                     show_col_types = FALSE) %>%
+  rename_with(~ tolower(gsub(" ", "_", .x, fixed = TRUE))) %>%
+  rename_with(~ str_remove(., "\\("), everything()) %>%
+  rename_with(~ str_remove(., "\\)"), everything()) %>%
+  rename(area_name = "area_name_including_legal/statistical_area_description")
 
 # Add the state and county code to get a fips code
 geocodes <- geocodes %>% unite("fips", state_code_fips, county_code_fips, sep = "", remove = FALSE) 
@@ -59,9 +65,10 @@ https://www.ddorn.net/data/FIPS_County_Code_Changes.pdf
 https://www.cdc.gov/nchs/nvss/bridged_race/county_geography-_changes2015.pdf
 
 ```{r food_banks}
+atlas <- read_
 
 # import food bank data
-food_bank <- read_csv("assistance_food_environment_atlas.csv", 
+food_bank <- read_csv("../assistance_food_environment_atlas.csv", 
                       show_col_types = FALSE) %>% clean_names() %>% select(fips, food_banks18)
 
 # drop two counties that have changed names
@@ -103,7 +110,7 @@ In the FIPS data are two counties called LaSalle County: one in Texas, called La
 ```{r food_desert}
 
 # read in data
-food_desert <- read_csv("food_desert_2019.csv") %>% select(CensusTract:County, LILATracts_1And10:LILATracts_Vehicle) %>% clean_names()
+food_desert <- read_csv("../food_desert_2019.csv") %>% select(CensusTract:County, LILATracts_1And10:LILATracts_Vehicle) %>% clean_names()
 
 # Dona Ana was not read in correctly due to tilde, change to Dona Ana in food desert data and La Salle needs a space added to they can be correctly matched with the FIPS data set
 food_desert <- food_desert %>% mutate(
@@ -136,15 +143,16 @@ https://www.countyhealthrankings.org/explore-health-rankings/rankings-data-docum
 ```{r food_environment_RWJ}
 
 # read in data
-rwj <- read_csv("RWJ_2020.csv", 
+rwj <- read_csv("../RWJ_2023.csv", 
                 col_types = cols(
-                  `5-digit FIPS Code` = col_character(), 
-                  `Food environment index raw value` = col_double()))
+                  `FIPS` = col_character(), 
+                  `Food Environment Index` = col_double()),
+                skip = 1)
 
 # rename columns and food environment index only
-rwj <- rwj %>% select(`5-digit FIPS Code`, `Food environment index raw value`) %>% rename(
-  fips = `5-digit FIPS Code`, 
-  rwj_food_environment_index = `Food environment index raw value`)
+rwj <- rwj %>% select(`FIPS`, `Food Environment Index`) %>% rename(
+  fips = `FIPS`, 
+  rwj_food_environment_index = `Food Environment Index`)
 
 # add a leading 0 to make FIPS 5 digits
 rwj <- rwj %>% mutate(
