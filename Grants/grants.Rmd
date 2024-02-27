@@ -65,8 +65,6 @@ https://www.ddorn.net/data/FIPS_County_Code_Changes.pdf
 https://www.cdc.gov/nchs/nvss/bridged_race/county_geography-_changes2015.pdf
 
 ```{r food_banks}
-atlas <- read_
-
 # import food bank data
 food_bank <- read_csv("../assistance_food_environment_atlas.csv", 
                       show_col_types = FALSE) %>% clean_names() %>% select(fips, food_banks18)
@@ -186,7 +184,7 @@ Irish, A, Clark, JK, Jablonski, BBR, Inwood, S, Freedgood, J. (2020). Value-Adde
 ```{r}
 
 # Import data, convert observations with 888888 or 99999 to NA and convert to numeric
-direct_intermediated_sales <- read_csv("Value-Added Data_Compiled_2020_05_04.csv", 
+direct_intermediated_sales <- read_csv("value_added_data_compiled_2020_05_04.csv", 
                                        na = c("888888", "999999", "(Z)"), 
                                        col_types = cols(
                                          `Sales_ValAdd-DTC_Tot2017` = col_double(), 
@@ -200,22 +198,22 @@ direct_intermediated_sales <- direct_intermediated_sales %>% select(
          intermediated_sales_17 = `Sales_ValAdd-InterMed_Tot2017`)
 
 # Import population data to compute sales per capita (might need to change code so filter(sumlev=="050) if column is imported as a character vector)
-population_2017 <- read_csv("co-est2017-alldata.csv") %>% clean_names() %>% filter(sumlev==50) %>% select(sumlev:ctyname, popestimate2017) 
+population_2019 <- read_csv("../co-est2019-alldata.csv") %>% clean_names() %>% filter(sumlev=='050') %>% select(sumlev:ctyname, popestimate2019) 
 
 # Combine state and county codes to create a FIPS code
-population_2017 <- population_2017 %>% mutate(
+population_2019 <- population_2019 %>% mutate(
   state_fips = str_pad(state, 2, side = "left", pad = "0"),
   county_fips = str_pad(county, 3, side = "left", pad = "0")) %>% 
   unite("fips", state_fips, county_fips, remove = FALSE, sep = "") %>%
-  select(fips, popestimate2017)
+  select(fips, popestimate2019)
 
 # Join population data to direct and intermediated sales data and compute sales per capita and keep only sales per capita variables 
-direct_intermediated_sales <- left_join(direct_intermediated_sales, population_2017)
+direct_intermediated_sales <- left_join(direct_intermediated_sales, population_2019)
 
 direct_intermediated_sales <- direct_intermediated_sales %>% mutate(
-  direct_sales_17_per_capita = direct_sales_17/popestimate2017, 
-  intermediated_sales_17_per_capita = intermediated_sales_17/popestimate2017) %>% select(
-    fips, direct_sales_17_per_capita, intermediated_sales_17_per_capita)
+  direct_sales_19_per_capita = direct_sales_17/popestimate2019, 
+  intermediated_sales_19_per_capita = intermediated_sales_17/popestimate2019) %>% select(
+    fips, direct_sales_19_per_capita, intermediated_sales_19_per_capita)
 
 ```
 
@@ -239,8 +237,8 @@ grants <- grants %>% select(!c(
 # Remove year from column names
 grants <- grants %>% rename(
   food_banks = food_banks18, 
-  direct_sales_per_capita = direct_sales_17_per_capita, 
-  intermediated_sales_per_capita = intermediated_sales_17_per_capita)
+  direct_sales_per_capita = direct_sales_19_per_capita, 
+  intermediated_sales_per_capita = intermediated_sales_19_per_capita)
 
 # Pivot longer
 grants <- grants %>% pivot_longer(
